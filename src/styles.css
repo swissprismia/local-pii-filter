@@ -1,0 +1,502 @@
+:root {
+  color-scheme: light;
+  --radius: 10px;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --brand-dark: #1929dd;
+  --brand-primary: #2c55fb;
+  --brand-light: #91b1ff;
+  --brand-pale: #dae3ff;
+  --destructive: oklch(0.577 0.245 27.325);
+  --mark: #dae3ff;
+  font-family:
+    "Plus Jakarta Sans", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/assets/PlusJakartaSans-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+button,
+textarea,
+input,
+select {
+  font: inherit;
+}
+
+.app-frame {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.brand-header {
+  width: 100%;
+  background: var(--brand-primary);
+  color: white;
+  box-shadow: 0 12px 30px rgb(25 41 221 / 16%);
+}
+
+.brand-inner,
+.footer-inner,
+.workspace {
+  width: min(1240px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.brand-inner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto minmax(180px, auto);
+  gap: 20px;
+  align-items: center;
+  padding: 24px 0;
+}
+
+.github-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 12%);
+  border: 1px solid rgb(255 255 255 / 24%);
+  color: white;
+  text-decoration: none;
+  transition: background 120ms ease, transform 120ms ease;
+}
+
+.github-link:hover,
+.github-link:focus-visible {
+  background: rgb(255 255 255 / 22%);
+  transform: translateY(-1px);
+}
+
+.github-link:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+.github-link svg {
+  display: block;
+}
+
+.brand-logo {
+  width: 170px;
+  height: auto;
+  display: block;
+}
+
+.shell {
+  flex: 1;
+  padding: 28px 0;
+}
+
+.workspace {
+  display: block;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 2.25rem;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.brand-header p {
+  margin-top: 8px;
+  color: rgb(255 255 255 / 82%);
+  line-height: 1.5;
+}
+
+.status {
+  min-width: 160px;
+  max-width: 360px;
+  padding: 10px 12px;
+  border: 1px solid rgb(255 255 255 / 24%);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 12%);
+  color: white;
+  text-align: right;
+}
+
+.status.loading {
+  color: white;
+}
+
+.editor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+textarea,
+.output {
+  width: 100%;
+  height: clamp(320px, 48vh, 560px);
+  padding: 16px;
+  border: 0;
+  outline: none;
+  color: var(--foreground);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+
+textarea {
+  display: block;
+  resize: none;
+}
+
+.output {
+  background: var(--muted);
+}
+
+.placeholder,
+.empty,
+.panel-header span {
+  color: var(--muted-foreground);
+}
+
+.actions,
+.redaction-controls {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.estimate {
+  align-self: center;
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+}
+
+.progress-panel {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 0 16px 14px;
+}
+
+.progress-track {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--brand-pale);
+}
+
+.progress-fill {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand-primary);
+  transition: width 120ms linear;
+}
+
+.progress-label {
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted-foreground);
+  font-size: 0.88rem;
+}
+
+select,
+input {
+  min-height: 40px;
+  border: 1px solid var(--input);
+  border-radius: 8px;
+  background: white;
+  color: var(--foreground);
+  padding: 8px 10px;
+}
+
+textarea:focus-visible,
+select:focus-visible,
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+button {
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.primary {
+  background: var(--brand-primary);
+  color: white;
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--brand-dark);
+}
+
+.ghost {
+  border-color: var(--border);
+  background: white;
+  color: var(--foreground);
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--muted);
+}
+
+mark {
+  border-radius: 4px;
+  background: var(--mark);
+  color: var(--foreground);
+  box-shadow: 0 0 0 2px var(--mark);
+}
+
+.findings-panel {
+  margin-top: 16px;
+}
+
+.threshold-control {
+  display: grid;
+  grid-template-columns: minmax(180px, 260px) minmax(180px, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.threshold-control label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.threshold-control strong {
+  color: var(--brand-dark);
+}
+
+.threshold-control input {
+  width: 100%;
+  min-height: auto;
+  accent-color: var(--brand-primary);
+}
+
+.label-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.chip input {
+  min-height: auto;
+}
+
+.findings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+
+.finding {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  background: white;
+}
+
+.finding div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.finding strong {
+  overflow-wrap: anywhere;
+}
+
+.finding span {
+  color: var(--muted-foreground);
+}
+
+code {
+  display: block;
+  max-height: 120px;
+  overflow: auto;
+  border-radius: 6px;
+  background: var(--muted);
+  padding: 8px;
+  color: var(--destructive);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.footer {
+  width: 100%;
+  border-top: 1px solid var(--border);
+  background: color-mix(in oklch, var(--muted), transparent 35%);
+  padding: 24px 0;
+}
+
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer img {
+  width: 24px;
+  height: 24px;
+}
+
+@media (max-width: 860px) {
+  .shell {
+    padding: 16px 0;
+  }
+
+  .brand-inner,
+  .editor-grid {
+    display: block;
+  }
+
+  .brand-inner {
+    padding: 20px 0;
+  }
+
+  .brand-logo {
+    width: 148px;
+    margin-bottom: 16px;
+  }
+
+  .github-link {
+    margin-top: 12px;
+  }
+
+  .status {
+    margin-top: 14px;
+    max-width: none;
+    text-align: left;
+  }
+
+  h1 {
+    font-size: 1.875rem;
+  }
+
+  .output-panel {
+    margin-top: 16px;
+  }
+
+  .threshold-control {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-label {
+    white-space: normal;
+  }
+
+  .footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  textarea,
+  .output {
+    height: 320px;
+  }
+}

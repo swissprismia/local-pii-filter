@@ -1,0 +1,18 @@
+{
+  "name": "app-pii",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "cache:model": "powershell -ExecutionPolicy Bypass -File scripts/cache-model.ps1",
+    "build:static": "npm run cache:model && vite build",
+    "deploy:azure": "powershell -ExecutionPolicy Bypass -File scripts/deploy-azure-web.ps1",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
+    "vite": "^6.0.0"
+  }
+}
