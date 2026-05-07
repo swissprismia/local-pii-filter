@@ -74,6 +74,45 @@ select {
   padding: 24px 0;
 }
 
+.brand-header-compact {
+  box-shadow: 0 4px 14px rgb(25 41 221 / 12%);
+}
+
+.brand-header-compact .brand-inner {
+  grid-template-columns: minmax(0, 1fr) auto minmax(160px, auto);
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.brand-tagline {
+  margin: 0;
+  color: rgb(255 255 255 / 90%);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brand-header-compact .github-link {
+  width: 34px;
+  height: 34px;
+}
+
+.brand-header-compact .github-link svg {
+  width: 18px;
+  height: 18px;
+}
+
+.brand-header-compact .status {
+  min-width: 140px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+}
+
+.app-frame.embed .shell {
+  padding: 16px 0;
+}
+
 .github-link {
   display: inline-flex;
   align-items: center;
@@ -247,10 +286,12 @@ textarea {
 }
 
 .custom-keywords .hint code {
+  display: inline;
   background: var(--muted);
   padding: 0 4px;
   border-radius: 4px;
   font-size: 0.75rem;
+  color: var(--muted-foreground);
 }
 
 .custom-keywords textarea {
@@ -295,6 +336,15 @@ label {
   gap: 6px;
   color: var(--muted-foreground);
   font-size: 0.88rem;
+}
+
+label.is-disabled {
+  opacity: 0.5;
+}
+
+input:disabled {
+  background: var(--muted);
+  cursor: not-allowed;
 }
 
 select,
@@ -451,6 +501,178 @@ code {
   overflow-wrap: anywhere;
 }
 
+.tab-bar {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  padding-right: 16px;
+}
+
+.tabs {
+  display: flex;
+}
+
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 16px 20px;
+  min-height: 56px;
+  color: var(--muted-foreground);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 2px;
+  background: transparent;
+  border-radius: 2px;
+}
+
+.tab:hover:not(.active) {
+  color: var(--foreground);
+}
+
+.tab.active {
+  color: var(--foreground);
+}
+
+.tab.active::after {
+  background: var(--brand-primary);
+}
+
+.tab .badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  padding: 2px 8px;
+  background: var(--brand-pale);
+  color: var(--brand-dark);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.tab-meta {
+  align-self: center;
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detokenize-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.token-mapping {
+  max-height: 240px;
+  overflow: auto;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.token-mapping table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.token-mapping th,
+.token-mapping td {
+  text-align: left;
+  padding: 6px 8px;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+
+.token-mapping th {
+  color: var(--muted-foreground);
+  font-weight: 600;
+}
+
+.token-mapping td code {
+  display: inline-block;
+  padding: 2px 6px;
+  margin: 0;
+  max-height: none;
+  overflow-wrap: anywhere;
+  color: var(--foreground);
+}
+
+.token-mapping td code.token {
+  color: var(--brand-dark);
+  background: var(--brand-pale);
+}
+
+.token-mapping .empty {
+  margin: 0;
+}
+
+.detokenize-input-label {
+  padding: 14px 16px 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--foreground);
+}
+
+.detokenize-input-label .hint {
+  font-weight: 400;
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+}
+
+#detokenize-input {
+  height: clamp(120px, 22vh, 220px);
+}
+
+.detokenize-output-header {
+  border-top: 1px solid var(--border);
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 12px 18px;
+  border-radius: 10px;
+  background: var(--brand-dark);
+  color: white;
+  box-shadow: 0 18px 40px rgb(25 41 221 / 28%);
+  font-weight: 500;
+  pointer-events: none;
+  animation: toast-in 180ms ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
 .footer {
   width: 100%;
   border-top: 1px solid var(--border);
@@ -490,6 +712,10 @@ code {
 
   .brand-inner {
     padding: 20px 0;
+  }
+
+  .brand-header-compact .brand-inner {
+    padding: 12px 0;
   }
 
   .brand-logo {
