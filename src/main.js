@@ -27,7 +27,10 @@ const state = {
     label: "",
   },
   selectedLabels: new Set(),
+  customKeywords: "",
 };
+
+const CUSTOM_LABEL = "custom";
 
 const labels = [
   "account_number",
@@ -38,6 +41,7 @@ const labels = [
   "private_url",
   "private_date",
   "secret",
+  CUSTOM_LABEL,
 ];
 
 const app = document.querySelector("#app");
@@ -95,6 +99,15 @@ function render() {
               </button>
               <button class="ghost" data-action="clear">Clear</button>
               <span class="estimate">${renderEstimate()}</span>
+            </div>
+            <div class="custom-keywords">
+              <label for="custom-keywords">
+                Custom terms to redact
+                <span class="hint">One per line or comma-separated. Whole-word, case-insensitive. Labeled <code>custom</code>.</span>
+              </label>
+              <textarea id="custom-keywords" spellcheck="false" placeholder="Acme Corp, OpenAI, ProjectX">${escapeHtml(
+                state.customKeywords,
+              )}</textarea>
             </div>
             ${renderProgress()}
           </section>
@@ -186,6 +199,10 @@ function bindEvents() {
 
   document.querySelector("#replacement").addEventListener("input", (event) => {
     state.replacement = event.target.value;
+  });
+
+  document.querySelector("#custom-keywords").addEventListener("input", (event) => {
+    state.customKeywords = event.target.value;
   });
 
   document.querySelector("#threshold").addEventListener("input", (event) => {
@@ -294,12 +311,16 @@ async function analyze() {
     }
 
     const startedAt = performance.now();
-    const spans = await detectSpans(state.inputText);
+    const modelSpans = await detectSpans(state.inputText);
     const detectionMs = performance.now() - startedAt;
     stopProgress(true);
     stopProgress = () => {};
 
-    state.spans = spans;
+    const keywordSpans = findKeywordSpans(state.inputText, state.customKeywords).filter(
+      (ks) => !modelSpans.some((ms) => ks.start < ms.end && ks.end > ms.start),
+    );
+
+    state.spans = [...modelSpans, ...keywordSpans].sort((a, b) => a.start - b.start);
     recordDetectionRun(state.inputText.length, detectionMs);
     state.selectedLabels = new Set(state.spans.map((span) => span.label));
     state.status = `Detected ${state.spans.length} span${state.spans.length === 1 ? "" : "s"} in ${formatDuration(
@@ -360,6 +381,42 @@ function updateProgress(progress) {
 
   const statusNode = document.querySelector(".status");
   if (statusNode) statusNode.textContent = state.status;
+}
+
+function findKeywordSpans(text, rawKeywords) {
+  const terms = [...new Set(rawKeywords.split(/[\n,]/).map((s) => s.trim()).filter(Boolean))];
+  if (terms.length === 0) return [];
+
+  const spans = [];
+  for (const term of terms) {
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const startBoundary = /^\w/.test(term) ? "\\b" : "";
+    const endBoundary = /\w$/.test(term) ? "\\b" : "";
+    const regex = new RegExp(`${startBoundary}${escaped}${endBoundary}`, "gi");
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      if (match[0].length === 0) {
+        regex.lastIndex += 1;
+        continue;
+      }
+      spans.push({
+        label: CUSTOM_LABEL,
+        score: 1,
+        start: match.index,
+        end: match.index + match[0].length,
+        text: match[0],
+      });
+    }
+  }
+
+  return spans
+    .sort((a, b) => a.start - b.start || b.end - a.end)
+    .reduce((acc, span) => {
+      const previous = acc.at(-1);
+      if (previous && span.start < previous.end) return acc;
+      acc.push(span);
+      return acc;
+    }, []);
 }
 
 async function detectSpans(text) {

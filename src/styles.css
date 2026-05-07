@@ -224,6 +224,43 @@ textarea {
   font-size: 0.9rem;
 }
 
+.custom-keywords {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.custom-keywords label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.custom-keywords .hint {
+  font-weight: 400;
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+}
+
+.custom-keywords .hint code {
+  background: var(--muted);
+  padding: 0 4px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.custom-keywords textarea {
+  height: 72px;
+  padding: 10px 12px;
+  background: var(--muted);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
 .progress-panel {
   display: grid;
   grid-template-columns: minmax(160px, 1fr) auto;
