@@ -80,6 +80,34 @@ $env:VITE_LOCAL_MODEL_ONLY="true"
 npm run build
 ```
 
+## Embedding in another page
+
+The app detects when it is loaded inside an iframe and switches to a compact embed layout (no footer, slim header). It also posts its content height to the parent window so the host page can resize the iframe to fit. Aspect-ratio container tricks like `padding-top: 120%` should be avoided on mobile because the resulting iframe height can collapse — use the snippet below instead and let the iframe grow to its content.
+
+```html
+<iframe
+  id="prismia-pii"
+  src="https://your-deployment.example.com/"
+  title="Local PII Filter"
+  loading="lazy"
+  referrerpolicy="no-referrer"
+  allow="clipboard-read; clipboard-write"
+  style="width: 100%; height: 720px; border: 0; display: block;"
+></iframe>
+<script>
+  window.addEventListener("message", function (event) {
+    var data = event.data;
+    if (!data || data.type !== "prismia:resize") return;
+    var iframe = document.getElementById("prismia-pii");
+    if (iframe && typeof data.height === "number") {
+      iframe.style.height = data.height + "px";
+    }
+  });
+</script>
+```
+
+The app sends `{ type: "prismia:resize", height: <number> }` to `window.parent` whenever its content height changes.
+
 ## Notes
 
 - Pasted text is not sent to a hosted inference API by this app.
