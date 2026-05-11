@@ -34,7 +34,7 @@
 
 body {
   margin: 0;
-  min-width: 320px;
+  min-width: 280px;
   background: var(--background);
   color: var(--foreground);
 }
@@ -50,6 +50,10 @@ select {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+}
+
+.app-frame.embed {
+  min-height: 0;
 }
 
 .brand-header {
@@ -111,6 +115,15 @@ select {
 
 .app-frame.embed .shell {
   padding: 16px 0;
+}
+
+.app-frame.embed textarea,
+.app-frame.embed .output {
+  height: 320px;
+}
+
+.app-frame.embed #detokenize-input {
+  height: 160px;
 }
 
 .github-link {
@@ -715,7 +728,28 @@ code {
   }
 
   .brand-header-compact .brand-inner {
-    padding: 12px 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+  }
+
+  .brand-header-compact .brand-tagline {
+    flex: 1 1 100%;
+    font-size: 0.85rem;
+  }
+
+  .brand-header-compact .github-link,
+  .brand-header-compact .status {
+    margin-top: 0;
+  }
+
+  .brand-header-compact .status {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    text-align: left;
   }
 
   .brand-logo {
