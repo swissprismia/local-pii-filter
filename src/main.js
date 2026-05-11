@@ -69,6 +69,26 @@ if (LOCAL_MODEL_ONLY) {
   env.allowRemoteModels = false;
 }
 
+let lastReportedHeight = 0;
+function reportEmbedHeight() {
+  if (!EMBED_MODE) return;
+  const height = Math.max(
+    document.documentElement.scrollHeight,
+    document.body ? document.body.scrollHeight : 0,
+  );
+  if (height === lastReportedHeight) return;
+  lastReportedHeight = height;
+  try {
+    window.parent.postMessage({ type: "prismia:resize", height }, "*");
+  } catch {}
+}
+
+if (EMBED_MODE && typeof ResizeObserver !== "undefined") {
+  const observer = new ResizeObserver(reportEmbedHeight);
+  observer.observe(document.documentElement);
+  if (document.body) observer.observe(document.body);
+}
+
 function render() {
   const visibleSpanCount = thresholdedSpans().length;
   const actionableSpanCount = filteredSpans().length;
@@ -159,6 +179,7 @@ function render() {
   `;
 
   bindEvents();
+  reportEmbedHeight();
 }
 
 function bindEvents() {
