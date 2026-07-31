@@ -15,6 +15,3 @@ updates:
     groups:
       minor-and-patch:
         update-types: ["minor", "patch"]
-      major:
-        patterns: ["*"]
-        update-types: ["major"]
