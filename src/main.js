@@ -6,17 +6,184 @@ const LOCAL_MODEL_PATH = "/models/";
 const LOCAL_MODEL_ONLY = import.meta.env.VITE_LOCAL_MODEL_ONLY === "true";
 const MAX_DETECTION_CHARS = 3000;
 const CHUNK_OVERLAP_CHARS = 200;
-const SAMPLE_TEXT =
-  "My name is Alice Smith. Email me at alice.smith@example.com or call +1 415 555 0199. My account number is 123456789.";
+
+const LANG = (() => {
+  const param = new URLSearchParams(window.location.search).get("lang");
+  if (param === "fr" || param === "en") return param;
+  return (navigator.language || "en").toLowerCase().startsWith("fr") ? "fr" : "en";
+})();
+
+const STRINGS = {
+  en: {
+    title: "Local PII Filter",
+    appTitle: "Local PII Filter",
+    stepInput: "Your text",
+    stepOutput: "Anonymized text",
+    stepRestore: "Restore the AI answer",
+    sample: "Sample",
+    clear: "Clear",
+    copy: "Copy",
+    anonymize: "Anonymize",
+    analyzing: "Analyzing...",
+    placeholderInput: "Paste your text here...",
+    placeholderOutput: "Your anonymized text will appear here.",
+    idleOutputHint: "Paste a text on the left, then click Anonymize.",
+    tagPlaceholder: "+ Add a word to hide (optional)",
+    method: "Method",
+    modeReplace: "Replace with a label",
+    modeCustom: "Replace with my text",
+    modeMask: "Mask with ***",
+    modeRemove: "Remove",
+    modeTokenize: "Anonymize (reversible)",
+    customReplacement: "My text",
+    detected: "Detected",
+    nothingFound: "No sensitive data detected.",
+    settings: "Settings",
+    threshold: "Minimum confidence",
+    restoreHint: "Available after a reversible anonymization.",
+    placeholderDetok: "Paste the AI answer containing tags like [PERSON_1]...",
+    restore: "Restore",
+    mappingSummary: (n) => `View mapping (${n})`,
+    copyMapping: "Copy (JSON)",
+    clearMapping: "Clear",
+    restored: "Restored text",
+    privacyNote: "Runs entirely in your browser. Nothing is sent to any server.",
+    footerRights: "All rights reserved.",
+    thToken: "Tag",
+    thOriginal: "Original",
+    // statuses
+    ready: "Ready",
+    anonymizedN: (n) => `${n} value${n === 1 ? "" : "s"} anonymized`,
+    copiedOutput: "Copied",
+    detokenized: "Restored",
+    copiedMapping: "Mapping copied",
+    copiedRestored: "Restored text copied",
+    mappingCleared: "Cleared",
+    pasteFirst: "Paste some text first",
+    loadingModel: "Preparing (first time only)...",
+    analyzingText: "Analyzing...",
+    analyzingEta: (d) => `Analyzing, about ${d}`,
+    errorPrefix: "Error: ",
+    webgpuFallback: "Loading compatibility mode...",
+    downloading: (pct) => `Downloading${pct}`,
+    modelReady: "Ready",
+    chunk: (i, n) => `Analyzing part ${i}/${n}`,
+    estimated: (d) => `≈ ${d}`,
+    pctLeft: (p, d) => `${p}% · ${d} left`,
+    pctDone: "100%",
+    // toasts
+    toastAnonymized: "Anonymized text copied",
+    toastAnonymizedManual: "Anonymized. Copy it from the right panel.",
+    toastOutputCopied: "Copied",
+    toastMappingCopied: "Mapping copied",
+    toastRestoredCopied: "Restored text copied",
+    sampleText:
+      "My name is Alice Smith. Email me at alice.smith@example.com or call +1 415 555 0199. My account number is 123456789.",
+    labelNames: {
+      account_number: "account no.",
+      private_address: "address",
+      private_email: "email",
+      private_person: "name",
+      private_phone: "phone",
+      private_url: "link",
+      private_date: "date",
+      secret: "secret",
+      custom: "custom",
+    },
+  },
+  fr: {
+    title: "Anonymiseur local",
+    appTitle: "Anonymiseur local",
+    stepInput: "Votre texte",
+    stepOutput: "Texte anonymisé",
+    stepRestore: "Restaurer la réponse de l'IA",
+    sample: "Exemple",
+    clear: "Effacer",
+    copy: "Copier",
+    anonymize: "Anonymiser",
+    analyzing: "Analyse...",
+    placeholderInput: "Collez votre texte ici...",
+    placeholderOutput: "Votre texte anonymisé apparaîtra ici.",
+    idleOutputHint: "Collez un texte à gauche, puis cliquez sur Anonymiser.",
+    tagPlaceholder: "+ Ajouter un mot à masquer (optionnel)",
+    method: "Méthode",
+    modeReplace: "Remplacer par une étiquette",
+    modeCustom: "Remplacer par mon texte",
+    modeMask: "Masquer avec ***",
+    modeRemove: "Supprimer",
+    modeTokenize: "Anonymiser (réversible)",
+    customReplacement: "Mon texte",
+    detected: "Détecté",
+    nothingFound: "Aucune donnée sensible détectée.",
+    settings: "Réglages",
+    threshold: "Confiance minimale",
+    restoreHint: "Disponible après une anonymisation réversible.",
+    placeholderDetok: "Collez la réponse de l'IA contenant des étiquettes comme [PERSON_1]...",
+    restore: "Restaurer",
+    mappingSummary: (n) => `Voir la correspondance (${n})`,
+    copyMapping: "Copier (JSON)",
+    clearMapping: "Vider",
+    restored: "Texte restauré",
+    privacyNote: "Fonctionne entièrement dans votre navigateur. Rien n'est envoyé à un serveur.",
+    footerRights: "Tous droits réservés.",
+    thToken: "Étiquette",
+    thOriginal: "Original",
+    ready: "Prêt",
+    anonymizedN: (n) => `${n} valeur${n === 1 ? "" : "s"} anonymisée${n === 1 ? "" : "s"}`,
+    copiedOutput: "Copié",
+    detokenized: "Restauré",
+    copiedMapping: "Correspondance copiée",
+    copiedRestored: "Texte restauré copié",
+    mappingCleared: "Vidé",
+    pasteFirst: "Collez d'abord un texte",
+    loadingModel: "Préparation (première fois uniquement)...",
+    analyzingText: "Analyse...",
+    analyzingEta: (d) => `Analyse, environ ${d}`,
+    errorPrefix: "Erreur : ",
+    webgpuFallback: "Chargement du mode de compatibilité...",
+    downloading: (pct) => `Téléchargement${pct}`,
+    modelReady: "Prêt",
+    chunk: (i, n) => `Analyse de la partie ${i}/${n}`,
+    estimated: (d) => `≈ ${d}`,
+    pctLeft: (p, d) => `${p} % · reste ${d}`,
+    pctDone: "100 %",
+    toastAnonymized: "Texte anonymisé copié",
+    toastAnonymizedManual: "Anonymisé. Copiez-le depuis le panneau de droite.",
+    toastOutputCopied: "Copié",
+    toastMappingCopied: "Correspondance copiée",
+    toastRestoredCopied: "Texte restauré copié",
+    sampleText:
+      "Je m'appelle Alice Martin. Écrivez-moi à alice.martin@exemple.ch ou appelez le +41 22 555 01 99. Mon numéro de compte est 123456789.",
+    labelNames: {
+      account_number: "n° de compte",
+      private_address: "adresse",
+      private_email: "e-mail",
+      private_person: "nom",
+      private_phone: "téléphone",
+      private_url: "lien",
+      private_date: "date",
+      secret: "secret",
+      custom: "personnalisé",
+    },
+  },
+};
+
+const T = STRINGS[LANG];
+document.documentElement.lang = LANG;
+document.title = T.title;
+
+const SAMPLE_TEXT = T.sampleText;
 
 const state = {
   classifier: null,
-  spans: [],
+  modelSpans: [],
+  keywordSpans: [],
   inputText: SAMPLE_TEXT,
-  outputText: SAMPLE_TEXT,
-  redactionsApplied: false,
+  outputText: "",
+  outputSegments: null,
+  analyzed: false,
   busy: false,
-  status: "Ready",
+  status: T.ready,
   mode: "tokenize",
   replacement: "[REDACTED]",
   threshold: 0.5,
@@ -27,12 +194,11 @@ const state = {
     label: "",
   },
   selectedLabels: new Set(),
-  customKeywords: "",
+  customTerms: [],
   tokenMap: new Map(),
   detokenizeInput: "",
   detokenizedOutput: "",
   detokenizeApplied: false,
-  bottomTab: "findings",
   toast: null,
 };
 
@@ -40,17 +206,9 @@ let toastTimerId = null;
 
 const CUSTOM_LABEL = "custom";
 
-const labels = [
-  "account_number",
-  "private_address",
-  "private_email",
-  "private_person",
-  "private_phone",
-  "private_url",
-  "private_date",
-  "secret",
-  CUSTOM_LABEL,
-];
+function labelName(label) {
+  return T.labelNames[label] || String(label).replace("private_", "");
+}
 
 const app = document.querySelector("#app");
 
@@ -89,10 +247,23 @@ if (EMBED_MODE && typeof ResizeObserver !== "undefined") {
   if (document.body) observer.observe(document.body);
 }
 
-function render() {
-  const visibleSpanCount = thresholdedSpans().length;
-  const actionableSpanCount = filteredSpans().length;
+function allSpans() {
+  return [...state.modelSpans, ...state.keywordSpans].sort((a, b) => a.start - b.start);
+}
 
+function thresholdedSpans() {
+  return allSpans().filter((span) => span.score >= state.threshold);
+}
+
+function filteredSpans() {
+  if (state.selectedLabels.size === 0) return [];
+  return thresholdedSpans().filter((span) => state.selectedLabels.has(span.label));
+}
+
+const hasResult = () => state.analyzed;
+const hasMapping = () => state.tokenMap.size > 0;
+
+function render() {
   app.innerHTML = `
     <div class="app-frame ${EMBED_MODE ? "embed" : ""}">
       ${renderHeader()}
@@ -100,63 +271,55 @@ function render() {
       <main class="shell">
         <section class="workspace">
 
+        <div class="statusbar"><span class="status ${state.busy ? "loading" : ""}">${escapeHtml(state.status)}</span></div>
+
         <div class="editor-grid">
           <section class="panel input-panel">
             <div class="panel-header">
-              <h2>Input</h2>
-              <button class="ghost" data-action="reset">Reset sample</button>
+              <h2><span class="step-num">1</span>${T.stepInput}</h2>
+              <span class="header-actions">
+                <button class="ghost small" data-action="reset">${T.sample}</button>
+                <button class="ghost small" data-action="clear">${T.clear}</button>
+              </span>
             </div>
-            <textarea id="input" spellcheck="false" placeholder="Paste text here...">${escapeHtml(
+            <textarea id="input" spellcheck="false" placeholder="${escapeHtml(T.placeholderInput)}">${escapeHtml(
               state.inputText,
             )}</textarea>
+            ${renderTagInput()}
             <div class="actions">
-              <button class="primary" data-action="analyze" ${state.busy ? "disabled" : ""}>
-                ${state.busy ? "Analyzing..." : "Detect PII"}
+              <button class="primary big" data-action="anonymize" ${state.busy ? "disabled" : ""}>
+                ${state.busy ? T.analyzing : T.anonymize}
               </button>
-              <button class="ghost" data-action="clear">Clear</button>
               <span class="estimate">${renderEstimate()}</span>
-            </div>
-            <div class="custom-keywords">
-              <label for="custom-keywords">
-                Custom terms to redact
-                <span class="hint">One per line or comma-separated. Whole-word, case-insensitive. Labeled <code>custom</code>.</span>
-              </label>
-              <textarea id="custom-keywords" spellcheck="false" placeholder="Acme Corp, OpenAI, ProjectX">${escapeHtml(
-                state.customKeywords,
-              )}</textarea>
             </div>
             ${renderProgress()}
           </section>
 
-          <section class="panel output-panel">
+          <section class="panel output-panel ${hasResult() ? "" : "is-idle"}" aria-disabled="${!hasResult()}">
             <div class="panel-header">
-              <h2>Output</h2>
-              <button class="ghost" data-action="copy" ${!state.outputText ? "disabled" : ""}>Copy</button>
+              <h2><span class="step-num">2</span>${T.stepOutput}</h2>
+              <button class="ghost small" data-action="copy" ${!hasResult() || !state.outputText ? "disabled" : ""}>${T.copy}</button>
             </div>
-            <div class="output" id="output">${renderHighlightedText()}</div>
-            <div class="redaction-controls">
-              <label>
-                Action
-                <select id="mode">
-                  <option value="replace" ${state.mode === "replace" ? "selected" : ""}>Replace with label</option>
-                  <option value="custom" ${state.mode === "custom" ? "selected" : ""}>Replace with custom text</option>
-                  <option value="mask" ${state.mode === "mask" ? "selected" : ""}>Mask characters</option>
-                  <option value="remove" ${state.mode === "remove" ? "selected" : ""}>Remove</option>
-                  <option value="tokenize" ${state.mode === "tokenize" ? "selected" : ""}>Tokenize (reversible)</option>
-                </select>
-              </label>
-              <label class="${state.mode === "custom" ? "" : "is-disabled"}">
-                Custom replacement
-                <input id="replacement" type="text" value="${escapeHtml(state.replacement)}" ${
-                  state.mode === "custom" ? "" : "disabled"
-                } />
-              </label>
-              <button class="primary" data-action="apply" ${actionableSpanCount === 0 ? "disabled" : ""}>Apply</button>
-            </div>
+            <div class="output" id="output">${renderOutput()}</div>
+            ${hasResult() ? renderResultTools() : ""}
           </section>
         </div>
 
-        ${renderBottomPanel()}
+        <section class="panel restore-panel ${hasMapping() ? "" : "is-idle"}" aria-disabled="${!hasMapping()}">
+          <div class="panel-header">
+            <h2><span class="step-num">3</span>${T.stepRestore}</h2>
+            ${
+              hasMapping()
+                ? `<button class="ghost small" data-action="copy-detokenized" ${
+                    !state.detokenizedOutput ? "disabled" : ""
+                  }>${T.copy}</button>`
+                : `<span class="idle-hint">${T.restoreHint}</span>`
+            }
+          </div>
+          ${hasMapping() ? renderRestoreBody() : ""}
+        </section>
+
+        <p class="privacy-note">${T.privacyNote}</p>
       </main>
 
       ${
@@ -167,9 +330,9 @@ function render() {
           <div class="footer-inner">
             <div class="footer-brand">
               <img src="/assets/logo_icon_blue.svg" alt="PrismIA" />
-              <span>© ${new Date().getFullYear()} PrismIA. All rights reserved.</span>
+              <span>© ${new Date().getFullYear()} PrismIA. ${T.footerRights}</span>
             </div>
-            <span>Local browser inference for privacy review.</span>
+            <span>${T.privacyNote}</span>
           </div>
         </footer>
       `
@@ -182,35 +345,198 @@ function render() {
   reportEmbedHeight();
 }
 
+function renderTagInput() {
+  return `
+    <div class="tag-input" data-role="tag-input">
+      ${state.customTerms
+        .map(
+          (term, i) => `
+            <span class="tag">${escapeHtml(term)}<button type="button" class="tag-x" data-remove-tag="${i}" aria-label="✕">✕</button></span>
+          `,
+        )
+        .join("")}
+      <input id="tag-field" type="text" placeholder="${escapeHtml(state.customTerms.length ? "+" : T.tagPlaceholder)}" autocomplete="off" />
+    </div>
+  `;
+}
+
+function renderResultTools() {
+  return `
+    <div class="result-tools">
+      <div class="kpi-row">
+        <span class="kpi-title">${T.detected}</span>
+        ${renderKpiChips()}
+      </div>
+      <div class="method-row">
+        <label>
+          ${T.method}
+          <select id="mode">
+            <option value="tokenize" ${state.mode === "tokenize" ? "selected" : ""}>${T.modeTokenize}</option>
+            <option value="replace" ${state.mode === "replace" ? "selected" : ""}>${T.modeReplace}</option>
+            <option value="custom" ${state.mode === "custom" ? "selected" : ""}>${T.modeCustom}</option>
+            <option value="mask" ${state.mode === "mask" ? "selected" : ""}>${T.modeMask}</option>
+            <option value="remove" ${state.mode === "remove" ? "selected" : ""}>${T.modeRemove}</option>
+          </select>
+        </label>
+        ${
+          state.mode === "custom"
+            ? `<label>${T.customReplacement}<input id="replacement" type="text" value="${escapeHtml(state.replacement)}" /></label>`
+            : ""
+        }
+        <details class="settings">
+          <summary>${T.settings}</summary>
+          <div class="threshold-control">
+            <label for="threshold">
+              ${T.threshold}
+              <strong>${Math.round(state.threshold * 100)}%</strong>
+            </label>
+            <input id="threshold" type="range" min="0" max="1" step="0.01" value="${state.threshold}" />
+          </div>
+        </details>
+      </div>
+    </div>
+  `;
+}
+
+function renderKpiChips() {
+  const spans = thresholdedSpans();
+  if (spans.length === 0) return `<span class="kpi-none">${T.nothingFound}</span>`;
+
+  const counts = new Map();
+  for (const span of spans) {
+    counts.set(span.label, (counts.get(span.label) || 0) + 1);
+  }
+
+  return [...counts.entries()]
+    .map(([label, count]) => {
+      const on = state.selectedLabels.has(label);
+      return `
+        <button type="button" class="kpi-chip ${on ? "on" : ""}" data-toggle-label="${label}" aria-pressed="${on}">
+          ${labelName(label)} <span class="kpi-count">${count}</span>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function renderRestoreBody() {
+  return `
+    <div class="restore-body">
+      <textarea id="detokenize-input" spellcheck="false" placeholder="${escapeHtml(
+        T.placeholderDetok,
+      )}">${escapeHtml(state.detokenizeInput)}</textarea>
+      <div class="actions">
+        <button class="primary" data-action="detokenize">${T.restore}</button>
+        <details class="mapping-details">
+          <summary>${T.mappingSummary(state.tokenMap.size)}</summary>
+          <div class="token-mapping">
+            <table>
+              <thead><tr><th>${T.thToken}</th><th>${T.thOriginal}</th></tr></thead>
+              <tbody>
+                ${[...state.tokenMap.entries()]
+                  .map(
+                    ([token, original]) => `
+                      <tr>
+                        <td><code class="token">${escapeHtml(token)}</code></td>
+                        <td><code>${escapeHtml(original)}</code></td>
+                      </tr>
+                    `,
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          </div>
+          <div class="mapping-actions">
+            <button class="ghost small" data-action="copy-mapping">${T.copyMapping}</button>
+            <button class="ghost small" data-action="clear-mapping">${T.clearMapping}</button>
+          </div>
+        </details>
+      </div>
+      ${
+        state.detokenizeApplied
+          ? `<div class="output restored-output">${escapeHtml(state.detokenizedOutput)}</div>`
+          : ""
+      }
+    </div>
+  `;
+}
+
 function bindEvents() {
   document.querySelector("#input").addEventListener("input", (event) => {
     state.inputText = event.target.value;
-    state.outputText = event.target.value;
-    state.redactionsApplied = false;
-    state.spans = [];
-    state.selectedLabels.clear();
+    invalidateResult();
   });
 
-  document.querySelector("#mode").addEventListener("change", (event) => {
-    state.mode = event.target.value;
-    render();
+  const modeSelect = document.querySelector("#mode");
+  if (modeSelect) {
+    modeSelect.addEventListener("change", (event) => {
+      state.mode = event.target.value;
+      reapply();
+      render();
+    });
+  }
+
+  const replacementInput = document.querySelector("#replacement");
+  if (replacementInput) {
+    replacementInput.addEventListener("input", (event) => {
+      state.replacement = event.target.value;
+      reapply();
+      const outputNode = document.querySelector("#output");
+      if (outputNode) outputNode.innerHTML = renderOutput();
+    });
+  }
+
+  const tagField = document.querySelector("#tag-field");
+  if (tagField) {
+    tagField.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === ",") {
+        event.preventDefault();
+        addTag(tagField.value);
+      } else if (event.key === "Backspace" && tagField.value === "" && state.customTerms.length) {
+        state.customTerms.pop();
+        onTagsChanged();
+      }
+    });
+    tagField.addEventListener("blur", () => {
+      if (tagField.value.trim()) addTag(tagField.value);
+    });
+  }
+
+  document.querySelectorAll("[data-remove-tag]").forEach((btn) => {
+    btn.addEventListener("click", (event) => {
+      const index = Number(event.currentTarget.dataset.removeTag);
+      state.customTerms.splice(index, 1);
+      onTagsChanged();
+    });
   });
 
-  document.querySelector("#replacement").addEventListener("input", (event) => {
-    state.replacement = event.target.value;
-  });
-
-  document.querySelector("#custom-keywords").addEventListener("input", (event) => {
-    state.customKeywords = event.target.value;
+  document.querySelectorAll("[data-toggle-label]").forEach((btn) => {
+    btn.addEventListener("click", (event) => {
+      const label = event.currentTarget.dataset.toggleLabel;
+      if (state.selectedLabels.has(label)) {
+        state.selectedLabels.delete(label);
+      } else {
+        state.selectedLabels.add(label);
+      }
+      reapply();
+      render();
+    });
   });
 
   const thresholdInput = document.querySelector("#threshold");
   if (thresholdInput) {
     thresholdInput.addEventListener("input", (event) => {
       state.threshold = Number(event.target.value);
-      state.outputText = state.inputText;
-      state.redactionsApplied = false;
+      state.selectedLabels = new Set(thresholdedSpans().map((span) => span.label));
+      const wasOpen = document.querySelector("details.settings")?.open;
+      reapply();
       render();
+      if (wasOpen) {
+        const details = document.querySelector("details.settings");
+        if (details) details.open = true;
+        const slider = document.querySelector("#threshold");
+        if (slider) slider.focus();
+      }
     });
   }
 
@@ -225,98 +551,101 @@ function bindEvents() {
   document.querySelectorAll("[data-action]").forEach((button) => {
     button.addEventListener("click", handleAction);
   });
+}
 
-  document.querySelectorAll("[data-label]").forEach((checkbox) => {
-    checkbox.addEventListener("change", (event) => {
-      if (event.target.checked) {
-        state.selectedLabels.add(event.target.dataset.label);
-      } else {
-        state.selectedLabels.delete(event.target.dataset.label);
-      }
-      state.outputText = state.inputText;
-      state.redactionsApplied = false;
-      render();
-    });
-  });
+function addTag(rawValue) {
+  const values = rawValue
+    .split(/[\n,]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  let added = false;
+  for (const value of values) {
+    if (!state.customTerms.some((t) => t.toLowerCase() === value.toLowerCase())) {
+      state.customTerms.push(value);
+      added = true;
+    }
+  }
+  if (added || values.length) onTagsChanged();
+}
+
+function onTagsChanged() {
+  if (state.analyzed) {
+    state.keywordSpans = computeKeywordSpans();
+    state.selectedLabels = new Set(thresholdedSpans().map((span) => span.label));
+    reapply();
+  }
+  render();
+  const tagField = document.querySelector("#tag-field");
+  if (tagField) tagField.focus();
+}
+
+function computeKeywordSpans() {
+  return findKeywordSpans(state.inputText, state.customTerms.join(",")).filter(
+    (ks) => !state.modelSpans.some((ms) => ks.start < ms.end && ks.end > ms.start),
+  );
+}
+
+function invalidateResult() {
+  state.analyzed = false;
+  state.modelSpans = [];
+  state.keywordSpans = [];
+  state.outputText = "";
+  state.outputSegments = null;
+  state.selectedLabels.clear();
+}
+
+function reapply() {
+  if (!state.analyzed) return;
+  const spans = filteredSpans();
+
+  if (state.mode === "tokenize") {
+    const { segments, tokenMap } = tokenizeSegments(state.inputText, spans);
+    state.outputSegments = segments;
+    state.outputText = segments.map((s) => s.text).join("");
+    state.tokenMap = tokenMap;
+  } else {
+    const segments = redactSegments(state.inputText, spans);
+    state.outputSegments = segments;
+    state.outputText = segments.map((s) => s.text).join("");
+  }
 }
 
 async function handleAction(event) {
   const action = event.currentTarget.dataset.action;
 
-  if (action === "analyze") {
-    await analyze();
-    return;
-  }
-
-  if (action === "apply") {
-    if (state.mode === "tokenize") {
-      const { text, tokenMap } = tokenizeText(state.inputText, filteredSpans());
-      state.outputText = text;
-      state.tokenMap = tokenMap;
-      state.status = `Tokenized ${tokenMap.size} unique value${tokenMap.size === 1 ? "" : "s"}`;
-      state.redactionsApplied = true;
-      state.bottomTab = "detokenize";
-      render();
-      try {
-        await navigator.clipboard.writeText(text);
-        showToast("Tokenized text copied to clipboard");
-      } catch (error) {
-        console.warn("Clipboard write failed", error);
-        showToast("Tokenized — copy manually from Output");
-      }
-    } else {
-      state.outputText = applyRedactions(state.inputText, filteredSpans());
-      state.status = "Redactions applied";
-      state.redactionsApplied = true;
-      render();
-    }
+  if (action === "anonymize") {
+    await anonymize();
     return;
   }
 
   if (action === "clear") {
     state.inputText = "";
-    state.outputText = "";
-    state.redactionsApplied = false;
-    state.spans = [];
-    state.selectedLabels.clear();
-    state.status = "Ready";
+    invalidateResult();
+    state.status = T.ready;
     render();
     return;
   }
 
   if (action === "reset") {
     state.inputText = SAMPLE_TEXT;
-    state.outputText = SAMPLE_TEXT;
-    state.redactionsApplied = false;
-    state.spans = [];
-    state.selectedLabels.clear();
-    state.status = "Ready";
+    invalidateResult();
+    state.status = T.ready;
     render();
     return;
   }
 
   if (action === "copy") {
     await navigator.clipboard.writeText(state.outputText);
-    state.status = "Copied output";
-    showToast("Output copied to clipboard");
-    return;
-  }
-
-  if (action === "tab") {
-    state.bottomTab = event.currentTarget.dataset.tab;
-    render();
+    state.status = T.copiedOutput;
+    showToast(T.toastOutputCopied);
     return;
   }
 
   if (action === "detokenize") {
-    if (state.tokenMap.size === 0) {
-      state.status = "No mapping available. Apply Tokenize first.";
-      render();
-      return;
-    }
+    if (state.tokenMap.size === 0) return;
     state.detokenizedOutput = detokenizeText(state.detokenizeInput, state.tokenMap);
     state.detokenizeApplied = true;
-    state.status = "Detokenized";
+    state.status = T.detokenized;
     render();
     return;
   }
@@ -325,16 +654,16 @@ async function handleAction(event) {
     if (state.tokenMap.size === 0) return;
     const json = JSON.stringify(Object.fromEntries(state.tokenMap), null, 2);
     await navigator.clipboard.writeText(json);
-    state.status = "Copied mapping JSON";
-    showToast("Mapping JSON copied to clipboard");
+    state.status = T.copiedMapping;
+    showToast(T.toastMappingCopied);
     return;
   }
 
   if (action === "copy-detokenized") {
     if (!state.detokenizedOutput) return;
     await navigator.clipboard.writeText(state.detokenizedOutput);
-    state.status = "Copied detokenized text";
-    showToast("Restored text copied to clipboard");
+    state.status = T.copiedRestored;
+    showToast(T.toastRestoredCopied);
     return;
   }
 
@@ -343,25 +672,26 @@ async function handleAction(event) {
     state.detokenizeInput = "";
     state.detokenizedOutput = "";
     state.detokenizeApplied = false;
-    state.status = "Mapping cleared";
+    state.status = T.mappingCleared;
     render();
     return;
   }
 }
 
-async function analyze() {
+async function anonymize() {
   let stopProgress = () => {};
 
   if (!state.inputText.trim()) {
-    state.status = "Paste text before detecting";
+    state.status = T.pasteFirst;
     render();
     return;
   }
 
-  state.outputText = state.inputText;
-  state.redactionsApplied = false;
+  const pendingTag = document.querySelector("#tag-field");
+  if (pendingTag && pendingTag.value.trim()) addTag(pendingTag.value);
+
   state.busy = true;
-  state.status = state.classifier ? "Analyzing text" : "Loading model";
+  state.status = state.classifier ? T.analyzingText : T.loadingModel;
   render();
 
   try {
@@ -373,11 +703,9 @@ async function analyze() {
     state.progress = {
       active: Boolean(estimate),
       percent: 0,
-      label: estimate ? `0% of ${formatDuration(estimate)}` : "",
+      label: estimate ? T.pctLeft(0, formatDuration(estimate)) : "",
     };
-    state.status = estimate
-      ? `Analyzing text, estimated ${formatDuration(estimate)}`
-      : "Analyzing text";
+    state.status = estimate ? T.analyzingEta(formatDuration(estimate)) : T.analyzingText;
     render();
 
     if (estimate) {
@@ -390,21 +718,31 @@ async function analyze() {
     stopProgress(true);
     stopProgress = () => {};
 
-    const keywordSpans = findKeywordSpans(state.inputText, state.customKeywords).filter(
-      (ks) => !modelSpans.some((ms) => ks.start < ms.end && ks.end > ms.start),
-    );
-
-    state.spans = [...modelSpans, ...keywordSpans].sort((a, b) => a.start - b.start);
+    state.modelSpans = modelSpans;
+    state.keywordSpans = computeKeywordSpans();
     recordDetectionRun(state.inputText.length, detectionMs);
-    state.selectedLabels = new Set(state.spans.map((span) => span.label));
-    state.status = `Detected ${state.spans.length} span${state.spans.length === 1 ? "" : "s"} in ${formatDuration(
-      detectionMs,
-    )}`;
+    state.analyzed = true;
+    state.selectedLabels = new Set(thresholdedSpans().map((span) => span.label));
+
+    reapply();
+
+    const count = filteredSpans().length;
+    state.status = T.anonymizedN(count);
+
+    if (state.mode === "tokenize" && state.outputText) {
+      try {
+        await navigator.clipboard.writeText(state.outputText);
+        showToast(T.toastAnonymized);
+      } catch (error) {
+        console.warn("Clipboard write failed", error);
+        showToast(T.toastAnonymizedManual);
+      }
+    }
   } catch (error) {
     stopProgress(false);
     stopProgress = () => {};
     console.error(error);
-    state.status = `Error: ${error.message}`;
+    state.status = `${T.errorPrefix}${error.message}`;
   } finally {
     stopProgress(false);
     state.progress = {
@@ -431,7 +769,7 @@ async function loadClassifier() {
     });
   } catch (error) {
     console.warn("WebGPU load failed, falling back to WASM", error);
-    state.status = "WebGPU unavailable, loading CPU fallback";
+    state.status = T.webgpuFallback;
     render();
     return pipeline("token-classification", MODEL_ID, {
       ...loadOptions,
@@ -446,9 +784,9 @@ function updateProgress(progress) {
     const percent = Number.isFinite(progress.progress)
       ? ` ${Math.round(progress.progress)}%`
       : "";
-    state.status = `Downloading ${progress.file}${percent}`;
+    state.status = T.downloading(percent);
   } else if (progress.status === "ready") {
-    state.status = "Model ready";
+    state.status = T.modelReady;
   } else {
     state.status = progress.status;
   }
@@ -499,7 +837,7 @@ async function detectSpans(text) {
 
   for (const [index, chunk] of chunks.entries()) {
     if (chunks.length > 1) {
-      setStatus(`Analyzing chunk ${index + 1}/${chunks.length}`);
+      setStatus(T.chunk(index + 1, chunks.length));
     }
 
     const output = await state.classifier(chunk.text, {
@@ -516,7 +854,7 @@ async function detectSpans(text) {
     );
   }
 
-  return mergeOverlappingSpans(detected);
+  return mergeOverlappingSpans(detected, text);
 }
 
 function createTextChunks(text) {
@@ -543,7 +881,7 @@ function createTextChunks(text) {
   return chunks;
 }
 
-function mergeOverlappingSpans(spans) {
+function mergeOverlappingSpans(spans, sourceText) {
   return [...spans]
     .sort((a, b) => a.start - b.start || b.end - a.end)
     .reduce((merged, span) => {
@@ -553,7 +891,7 @@ function mergeOverlappingSpans(spans) {
         previous.start = Math.min(previous.start, span.start);
         previous.end = Math.max(previous.end, span.end);
         previous.score = Math.max(previous.score, span.score);
-        previous.text = state.inputText.slice(previous.start, previous.end);
+        previous.text = sourceText.slice(previous.start, previous.end);
         return merged;
       }
 
@@ -638,15 +976,6 @@ function uniqueCandidates(rawWord) {
   return [...new Set([rawWord, rawWord.trimStart(), rawWord.trim(), normalized, normalized.trim()])].filter(Boolean);
 }
 
-function filteredSpans() {
-  if (state.selectedLabels.size === 0) return [];
-  return thresholdedSpans().filter((span) => state.selectedLabels.has(span.label));
-}
-
-function thresholdedSpans() {
-  return state.spans.filter((span) => span.score >= state.threshold);
-}
-
 function recordDetectionRun(textLength, detectionMs) {
   if (textLength <= 0 || detectionMs <= 0) return;
 
@@ -678,8 +1007,8 @@ function estimateDetectionMs(textLength) {
 function renderEstimate() {
   if (state.busy) return "";
   const estimate = estimateDetectionMs(state.inputText.length);
-  if (!estimate) return "ETA after 2 detections";
-  return `Estimated detection: ${formatDuration(estimate)}`;
+  if (!estimate) return "";
+  return T.estimated(formatDuration(estimate));
 }
 
 function renderProgress() {
@@ -715,9 +1044,7 @@ function startEstimatedProgress(estimateMs) {
     const remainingMs = Math.max(0, estimateMs - elapsedMs);
 
     state.progress.percent = percent;
-    state.progress.label = finished
-      ? "100% complete"
-      : `${Math.round(percent)}% complete, about ${formatDuration(remainingMs)} left`;
+    state.progress.label = finished ? T.pctDone : T.pctLeft(Math.round(percent), formatDuration(remainingMs));
 
     const fill = document.querySelector(".progress-fill");
     const track = document.querySelector(".progress-track");
@@ -740,23 +1067,30 @@ function formatDuration(milliseconds) {
   return `${minutes} min ${remainingSeconds} s`;
 }
 
-function applyRedactions(text, spans) {
-  return [...spans]
-    .sort((a, b) => b.start - a.start)
-    .reduce((nextText, span) => {
-      const replacement = replacementFor(span);
-      return `${nextText.slice(0, span.start)}${replacement}${nextText.slice(span.end)}`;
-    }, text);
+function redactSegments(text, spans) {
+  const ordered = [...spans].sort((a, b) => a.start - b.start);
+  const segments = [];
+  let cursor = 0;
+
+  for (const span of ordered) {
+    if (span.start < cursor) continue;
+    if (span.start > cursor) segments.push({ text: text.slice(cursor, span.start), inserted: false });
+    const replacement = replacementFor(span);
+    if (replacement) segments.push({ text: replacement, inserted: true });
+    cursor = span.end;
+  }
+  if (cursor < text.length) segments.push({ text: text.slice(cursor), inserted: false });
+
+  return segments;
 }
 
-function tokenizeText(text, spans) {
+function tokenizeSegments(text, spans) {
   const tokenMap = new Map();
   const valueToToken = new Map();
   const counters = {};
 
   const ordered = [...spans].sort((a, b) => a.start - b.start);
-
-  let result = "";
+  const segments = [];
   let cursor = 0;
 
   for (const span of ordered) {
@@ -771,12 +1105,13 @@ function tokenizeText(text, spans) {
       valueToToken.set(valueKey, token);
       tokenMap.set(token, original);
     }
-    result += text.slice(cursor, span.start) + token;
+    if (span.start > cursor) segments.push({ text: text.slice(cursor, span.start), inserted: false });
+    segments.push({ text: token, inserted: true });
     cursor = span.end;
   }
-  result += text.slice(cursor);
+  if (cursor < text.length) segments.push({ text: text.slice(cursor), inserted: false });
 
-  return { text: result, tokenMap };
+  return { segments, tokenMap };
 }
 
 function detokenizeText(text, tokenMap) {
@@ -801,212 +1136,28 @@ function replacementFor(span) {
   return `[${span.label}]`;
 }
 
-function renderHighlightedText() {
-  const spans = filteredSpans();
-  if (!state.outputText) return '<span class="placeholder">Redacted output appears here.</span>';
-  if (state.redactionsApplied || spans.length === 0) return escapeHtml(state.outputText);
-
-  let cursor = 0;
-  let html = "";
-
-  for (const span of spans) {
-    html += escapeHtml(state.inputText.slice(cursor, span.start));
-    html += `<mark title="${escapeHtml(span.label)}">${escapeHtml(state.inputText.slice(span.start, span.end))}</mark>`;
-    cursor = span.end;
+function renderOutput() {
+  if (!hasResult()) {
+    return `<span class="placeholder">${escapeHtml(T.idleOutputHint)}</span>`;
   }
-
-  html += escapeHtml(state.inputText.slice(cursor));
-  return html;
-}
-
-function renderFindings() {
-  if (state.spans.length === 0) {
-    return '<p class="empty">No detections yet.</p>';
+  if (!state.outputSegments || state.outputSegments.length === 0) {
+    return escapeHtml(state.outputText || "");
   }
-
-  const spans = thresholdedSpans();
-  if (spans.length === 0) {
-    return '<p class="empty">No detections meet the current threshold.</p>';
-  }
-
-  return spans
-    .map(
-      (span) => `
-        <article class="finding">
-          <div>
-            <strong>${escapeHtml(span.label)}</strong>
-            <span>${Math.round(span.score * 1000) / 10}%</span>
-          </div>
-          <code>${escapeHtml(span.text)}</code>
-        </article>
-      `,
+  return state.outputSegments
+    .map((segment) =>
+      segment.inserted ? `<mark>${escapeHtml(segment.text)}</mark>` : escapeHtml(segment.text),
     )
     .join("");
 }
 
-function renderBottomPanel() {
-  const findingsCount = state.spans.length;
-  const visibleCount = thresholdedSpans().length;
-  const tokenCount = state.tokenMap.size;
-  const tab = state.bottomTab;
-
-  let meta = "";
-  if (tab === "findings") {
-    meta = findingsCount > 0 ? `${visibleCount} shown / ${findingsCount} detected` : "";
-  } else {
-    meta = tokenCount > 0
-      ? `${tokenCount} token${tokenCount === 1 ? "" : "s"} in mapping`
-      : "no mapping yet";
-  }
-
-  return `
-    <section class="panel findings-panel">
-      <div class="tab-bar">
-        <div class="tabs" role="tablist">
-          <button role="tab" aria-selected="${tab === "findings"}" class="tab ${
-            tab === "findings" ? "active" : ""
-          }" data-action="tab" data-tab="findings">
-            Findings${findingsCount > 0 ? ` <span class="badge">${findingsCount}</span>` : ""}
-          </button>
-          <button role="tab" aria-selected="${tab === "detokenize"}" class="tab ${
-            tab === "detokenize" ? "active" : ""
-          }" data-action="tab" data-tab="detokenize">
-            Detokenize${tokenCount > 0 ? ` <span class="badge">${tokenCount}</span>` : ""}
-          </button>
-        </div>
-        <span class="tab-meta">${escapeHtml(meta)}</span>
-      </div>
-      ${tab === "findings" ? renderFindingsTab() : renderDetokenizeTab()}
-    </section>
-  `;
-}
-
-function renderFindingsTab() {
-  return `
-    <div class="threshold-control">
-      <label for="threshold">
-        Confidence threshold
-        <strong>${Math.round(state.threshold * 100)}%</strong>
-      </label>
-      <input id="threshold" type="range" min="0" max="1" step="0.01" value="${state.threshold}" />
-    </div>
-    <div class="label-filters">
-      ${labels
-        .map(
-          (label) => `
-            <label class="chip">
-              <input type="checkbox" data-label="${label}" ${
-                state.selectedLabels.has(label) ? "checked" : ""
-              } />
-              ${label.replace("private_", "")}
-            </label>
-          `,
-        )
-        .join("")}
-    </div>
-    <div class="findings">
-      ${renderFindings()}
-    </div>
-  `;
-}
-
-function renderDetokenizeTab() {
-  const tokenCount = state.tokenMap.size;
-  const hasMapping = tokenCount > 0;
-
-  return `
-    <div class="detokenize-body">
-      <div class="token-mapping">
-        ${
-          hasMapping
-            ? `<table>
-                <thead><tr><th>Token</th><th>Original</th></tr></thead>
-                <tbody>
-                  ${[...state.tokenMap.entries()]
-                    .map(
-                      ([token, original]) => `
-                        <tr>
-                          <td><code class="token">${escapeHtml(token)}</code></td>
-                          <td><code>${escapeHtml(original)}</code></td>
-                        </tr>
-                      `,
-                    )
-                    .join("")}
-                </tbody>
-              </table>`
-            : '<p class="empty">No mapping yet. Choose <strong>Tokenize (reversible)</strong> in the Action dropdown and click Apply, then paste responses below to restore originals.</p>'
-        }
-      </div>
-      <label class="detokenize-input-label" for="detokenize-input">
-        Paste tokenized text
-        <span class="hint">Replaces every known token with its original value.</span>
-      </label>
-      <textarea id="detokenize-input" spellcheck="false" placeholder="Paste text containing tokens like [PERSON_1] here...">${escapeHtml(
-        state.detokenizeInput,
-      )}</textarea>
-      <div class="actions">
-        <button class="primary" data-action="detokenize" ${
-          !hasMapping ? "disabled" : ""
-        }>Detokenize</button>
-        <button class="ghost" data-action="copy-mapping" ${!hasMapping ? "disabled" : ""}>Copy mapping (JSON)</button>
-        <button class="ghost" data-action="clear-mapping" ${!hasMapping ? "disabled" : ""}>Clear mapping</button>
-      </div>
-      ${
-        state.detokenizeApplied
-          ? `
-            <div class="panel-header detokenize-output-header">
-              <h2>Restored text</h2>
-              <button class="ghost" data-action="copy-detokenized" ${
-                !state.detokenizedOutput ? "disabled" : ""
-              }>Copy</button>
-            </div>
-            <div class="output">${escapeHtml(state.detokenizedOutput)}</div>
-          `
-          : ""
-      }
-    </div>
-  `;
-}
-
 function renderHeader() {
-  const githubLink = `
-    <a
-      class="github-link"
-      href="https://github.com/swissprismia/local-pii-filter"
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label="View source on GitHub"
-      title="View source on GitHub"
-    >
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
-        <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.111.82-.261.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
-      </svg>
-    </a>
-  `;
-  const statusPill = `<div class="status ${state.busy ? "loading" : ""}">${escapeHtml(state.status)}</div>`;
-
-  if (EMBED_MODE) {
-    return `
-      <header class="brand-header brand-header-compact">
-        <div class="brand-inner">
-          <p class="brand-tagline">Detect and redact sensitive text locally with ${MODEL_ID}.</p>
-          ${githubLink}
-          ${statusPill}
-        </div>
-      </header>
-    `;
-  }
+  if (EMBED_MODE) return "";
 
   return `
-    <header class="brand-header">
-      <div class="brand-inner">
-        <img class="brand-logo" src="/assets/logo_wordmark_white.png" alt="PrismIA" />
-        <div>
-          <h1>Local PII Filter</h1>
-          <p>Detect and redact sensitive text locally with ${MODEL_ID}.</p>
-        </div>
-        ${githubLink}
-        ${statusPill}
+    <header class="app-header">
+      <div class="app-header-inner">
+        <img class="app-logo" src="/assets/logo_icon_blue.svg" alt="PrismIA" />
+        <span class="app-title">${T.appTitle}</span>
       </div>
     </header>
   `;
